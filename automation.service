@@ -1,0 +1,13 @@
+[Unit]
+Description=Automation Project
+After=docker.service
+Requires=docker.service
+
+[Service]
+WorkingDirectory=/var/www/automation
+ExecStart=/usr/bin/docker-compose up
+ExecStop=/usr/bin/docker-compose down
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
