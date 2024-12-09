@@ -1,53 +1,44 @@
 #!/bin/bash
 
-# Atualizar o sistema
-apt update && apt upgrade -y
+# Atualizar o sistema e instalar dependências essenciais
+echo "Atualizando pacotes do sistema..."
+sudo apt update && sudo apt upgrade -y
 
-# Instalar Docker e dependências
-apt install -y curl wget vim gnupg2 software-properties-common
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu focal stable" > /etc/apt/sources.list.d/docker.list
-apt update
-apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+# Instalar pacotes necessários
+echo "Instalando pacotes necessários..."
+sudo apt install -y curl git python3-pip python3-dev docker.io docker-compose
 
-# Criar diretório do projeto
-mkdir -p /opt/automation-project
-cd /opt/automation-project
+# Habilitar e iniciar o Docker
+echo "Habilitando e iniciando o Docker..."
+sudo systemctl enable --now docker
 
-# Criar arquivos do projeto
-cat <<EOF > Dockerfile
-# Usar imagem oficial do Python
-FROM python:3.9-slim
+# Verificar se o Docker e Docker Compose estão instalados corretamente
+echo "Verificando versões do Docker e Docker Compose..."
+docker --version
+docker-compose --version
 
-WORKDIR /app
-COPY requirements.txt .
-COPY app.py .
+# Adicionar o usuário ao grupo 'docker' para execução sem 'sudo'
+echo "Adicionando usuário ao grupo docker para execução sem sudo..."
+sudo usermod -aG docker $USER
 
-RUN pip install --no-cache-dir -r requirements.txt
+# Instalar dependências Python (selenium, flask)
+echo "Instalando dependências Python (Selenium, Flask)..."
+pip3 install selenium flask
 
-EXPOSE 5000
-CMD ["python", "app.py"]
-EOF
+# Clonar o repositório do projeto
+echo "Clonando repositório do projeto..."
+git clone https://github.com/macbservices/automation-project.git /home/$USER/automation-project
 
-cat <<EOF > requirements.txt
-Flask==2.1.3
-Flask-Cors==3.0.10
-selenium==4.5.0
-EOF
+# Garantir permissões corretas no diretório do projeto
+echo "Configurando permissões do diretório do projeto..."
+sudo chown -R $USER:$USER /home/$USER/automation-project
+sudo chmod -R 755 /home/$USER/automation-project
 
-cat <<EOF > app.py
-from flask import Flask, jsonify
+# Navegar até o diretório do projeto
+cd /home/$USER/automation-project
 
-app = Flask(__name__)
-
-@app.route("/")
-def home():
-    return jsonify({"message": "Hello, World!"})
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
-EOF
-
+# Corrigir o arquivo docker-compose.yml (ajustar para versão 3.3)
+echo "Corrigindo docker-compose.yml..."
 cat <<EOF > docker-compose.yml
 version: "3.3"
 services:
@@ -65,7 +56,9 @@ services:
       - "4444:4444"
 EOF
 
-# Construir e iniciar os containers
+# Subir os containers com Docker Compose
+echo "Iniciando containers Docker..."
 docker-compose up -d
 
-echo "Projeto configurado com sucesso. Acesse: http://170.254.135.110:5000"
+# Finalizando e informando sobre o status
+echo "Instalação concluída! O painel está disponível em: http://painel.macbvendas.com.br:5000"
